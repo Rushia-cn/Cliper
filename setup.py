@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="rushia-clipper",
-    version="0.0.1",
+    version="0.0.3",
     author="George Miao",
     author_email="gm@georgemiao.com",
     description="Download, trim, normalize, upload and publish audio clips to Rushia-btn",

@@ -17,7 +17,7 @@ lg = logging.getLogger("ClipSync")
 
 class Clipper:
     """
-    Tool class for downloading clip from video src, upload to B2 storage and sync the info (.json) to CF Workers
+    Tool class for downloading clip from video rushia_clipper, upload to B2 storage and sync the info (.json) to CF Workers
     The code is really messed up, needed to be refactored in future #TODO
     """
     _time_pattern = re.compile(r"\d*:[0-5]\d?:[0-5]\d?")
@@ -39,11 +39,11 @@ class Clipper:
         key_id = key_id or os.environ["B2_KEY_ID"]
         app_key = app_key or os.environ["B2_APP_KEY"]
         if not (account_id and namespace and cf_token and cf_email):
-            raise ClipSyncError("Credential for CF is needed, "
+            raise ClipperError("Credential for CF is needed, "
                                 "set CF_ACCOUNT_ID, CF_NAMESPACE, CF_TOKEN, CF_EMAIL "
                                 "as environment variable or pass in as arguments")
         if not (key_id and app_key):
-            raise ClipSyncError("Credential for B2 is needed, "
+            raise ClipperError("Credential for B2 is needed, "
                                 "set B2_KEY_ID and B2_APP_KEY "
                                 "as environment variable or pass in as arguments")
         info = InMemoryAccountInfo()
@@ -77,7 +77,7 @@ class Clipper:
     def _build_download_command(self, url, start: str, end: str):
         """if start:
             if not self._check_time_fmt(start):
-                raise ClipSyncError("Invalid start")"""
+                raise ClipperError("Invalid start")"""
         start = start or "00:00:00"
         if end:
             end = f"-to {end}"
@@ -112,7 +112,7 @@ class Clipper:
 
     def _download(self, url, start: str, end: str):
         """
-        Download clip from `url` which can be any video src that's supported by youtube-dl
+        Download clip from `url` which can be any video rushia_clipper that's supported by youtube-dl
         :param url:
         :param start:
         :param end:
@@ -209,6 +209,10 @@ class Clipper:
 
         self._kv['categories'] = self._categories
 
+    @property
+    def categories(self):
+        return [x['name']["en"] for x in self._categories]
 
-class ClipSyncError(Exception):
+
+class ClipperError(Exception):
     pass
