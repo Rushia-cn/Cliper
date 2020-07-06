@@ -53,7 +53,7 @@ class Clipper:
         self._file_link_template = f"https://f002.backblazeb2.com/file/{bucket_name}/{'{}'}"
         self._storage_path = storage_path
         self._proxy = proxy
-        self._kv = WorkersKV(account_id, namespace, cf_token, cf_email, key_id)
+        self._kv = WorkersKV(account_id, namespace, cf_token, cf_email)
         if not pt.exists(storage_path):
             os.mkdir(storage_path)
         self._categories = self.load_category()
