@@ -40,12 +40,12 @@ class Clipper:
         app_key = app_key or os.environ["B2_APP_KEY"]
         if not (account_id and namespace and cf_token and cf_email):
             raise ClipperError("Credential for CF is needed, "
-                                "set CF_ACCOUNT_ID, CF_NAMESPACE, CF_TOKEN, CF_EMAIL "
-                                "as environment variable or pass in as arguments")
+                               "set CF_ACCOUNT_ID, CF_NAMESPACE, CF_TOKEN, CF_EMAIL "
+                               "as environment variable or pass in as arguments")
         if not (key_id and app_key):
             raise ClipperError("Credential for B2 is needed, "
-                                "set B2_KEY_ID and B2_APP_KEY "
-                                "as environment variable or pass in as arguments")
+                               "set B2_KEY_ID and B2_APP_KEY "
+                               "as environment variable or pass in as arguments")
         info = InMemoryAccountInfo()
         self._api = B2Api(info)
         self._api.authorize_account("production", key_id, app_key)
@@ -94,6 +94,11 @@ class Clipper:
         command.append(url)
         return command
 
+    def _run(self, cmd):
+        out = sp.run(cmd, capture_output=True)
+        if err := out.stderr:
+            raise ClipperError(err.decode())
+
     def _normalize(self, in_path, test_loadness=False):
         """
         Use ffmpeg-normalize to normalize a clip.
@@ -107,7 +112,7 @@ class Clipper:
         fn.add_media_file(in_path, out_path)
         fn.run_normalization()
         if test_loadness:
-            sp.run(f"ffmpeg -i {out_path} -filter:a volumedetect -f null /dev/null".split())
+            self._run(f"ffmpeg -i {out_path} -filter:a volumedetect -f null /dev/null".split())
         return out_path
 
     def _download(self, url, start: str, end: str):
@@ -121,7 +126,7 @@ class Clipper:
         cmd = self._build_download_command(url, start, end)
         dir = cmd[3] % {"ext": "opus"}
         lg.info(f"Start downloading audio to {dir}")
-        sp.run(cmd)
+        self._run(cmd)
         lg.info("Done downloading, start normalizing")
         o_dir = self._normalize(dir)
         lg.info("Done normalizing")
@@ -134,9 +139,9 @@ class Clipper:
         lg.info("Done uploading")
         return ret
 
-    def _generate_clip(self, url,
-                       start: str = None,
-                       end: str = None):
+    def generate_clip(self, url,
+                      start: str = None,
+                      end: str = None):
         """
         Method for generating a clip, don't call directly. Use inquiry for a prompt env.
         First a clip will be downloaded into `_storage_path` and a random UUID will be generated for the clip
@@ -147,16 +152,11 @@ class Clipper:
         :param end: optional. end point of the clip from video. default to then end of video
         :return:
         """
-        try:
-            file_path = self._download(url, start, end)
-            lg.info(f"File storaged at {file_path}")
-            file_name = pt.split(file_path)[-1]
-            self._upload(file_path, file_name)
-            return self._file_link_template.format(file_name)
-        except Exception as e:
-            lg.error(f"Generation failed: %s", e)
-            lg.error(traceback.format_exc())
-            exit(-1)
+        file_path = self._download(url, start, end)
+        lg.info(f"File storaged at {file_path}")
+        file_name = pt.split(file_path)[-1]
+        self._upload(file_path, file_name)
+        return self._file_link_template.format(file_name)
 
     def check_category(self, category):
         """
